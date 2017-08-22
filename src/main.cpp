@@ -4,7 +4,6 @@
 #include <SD.h>
 #include <FastLED.h>
 #include <WiFiManager.h>
-#include <ESP8266TrueRandom.h>
 #include <FastLED.h>
 #include <Button.h>
 
@@ -262,7 +261,8 @@ bool readRGBFile(File dataFile){
 
 void playRandomFrame(){
   root = SD.open("/");
-  uint8_t ranNum = ESP8266TrueRandom.random(1,fileAmount);
+  uint8_t ranNum = random8(1, fileAmount); //Uses random from FastLED libary
+  //uint8_t ranNum = ESP8266TrueRandom.random(1,fileAmount);
   uint8_t i = 0; //counter
   Serial.println(ranNum);
   while (true) {
