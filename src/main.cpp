@@ -4,7 +4,6 @@
 #include <SD.h>
 #include <FastLED.h>
 #include <WiFiManager.h>
-#include <FastLED.h>
 #include <Button.h>
 
 //UDP Variables
