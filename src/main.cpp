@@ -36,7 +36,6 @@ uint32_t timer;
 uint32_t lastTimer;
 #define DELAY_TIME 5000
 #define SPECTRUM_ANALYZER_INTERRUPT_PIN 16
-bool modeRandom = false;
 uint8_t frameCounter = 1; //Ignore SYSTEM file
 File root;
 
@@ -57,6 +56,11 @@ Button fileMode(FILE_RANDOM_MODE, true, true, 20);
 #define MODE_SELECT_PIN 5
 Button modeSelect(MODE_SELECT_PIN, true, true, 20);
 bool _spectrumEnabled = false;
+
+//Mode Variables
+typedef enum {FROM_SD, RANDOM_SD, SIMPLE_NOISE, COLOR_NOISE, SPECTRUM_ANALYZER} matrixMode; //SPECTRUM_ANALYZER and VU_METER not implemented yet
+matrixMode currentMode = FROM_SD;
+const char *currentModeLookupTable[5] = {"FROM_SD", "RANDOM_SD", "SIMPLE_NOISE", "COLOR_NOISE", "SPECTRUM_ANALYZER"}; //Lookup table so I can get the string of the enum
 
 
 //Matrix Functions
@@ -147,7 +151,8 @@ void ChangePaletteAndSettingsPeriodically(){
 }
 
 void displaySimpleNoise(uint16_t speed, uint16_t scale){
-	static uint8_t ihue=0;
+  //Speed  = 1 for a very slow moving effect, 60 for something that ends up looking like water
+  static uint8_t ihue=0;
 	_speed = speed;
 	_scale = scale;
 	fillnoise8();
@@ -162,6 +167,7 @@ void displaySimpleNoise(uint16_t speed, uint16_t scale){
 }
 
 void displayColorPaletteNoise(uint16_t speed, uint16_t scale){
+  //Speed  = 1 for a very slow moving effect, 60 for something that ends up looking like water
 	static uint8_t ihue=0;
 	_speed = speed;
 	_scale = scale;
@@ -169,18 +175,12 @@ void displayColorPaletteNoise(uint16_t speed, uint16_t scale){
 
   for(int i = 0; i < kMatrixWidth; i++) {
     for(int j = 0; j < kMatrixHeight; j++) {
-      // We use the value at the (i,j) coordinate in the noise
-      // array for our brightness, and the flipped value from (j,i)
-      // for our pixel's index into the color palette.
       uint8_t index = noise[j][i];
       uint8_t bri =   noise[i][j];
-      // if this palette is a 'loop', add a slowly-changing base value
       if( colorLoop) {
         index += ihue;
       }
 
-      // brighten up, as the color palette itself often contains the
-      // light/dark dynamic range desired
       if( bri > 127 ) {
         bri = 255;
       } else {
@@ -435,28 +435,48 @@ void loop() {
 	modeSelect.read();
 
 	if(modeSelect.wasPressed()){
-			_spectrumEnabled = !_spectrumEnabled;
-			if(_spectrumEnabled){
-				digitalWrite(SPECTRUM_ANALYZER_INTERRUPT_PIN, HIGH);
-				Serial.println("[Spectrum Button] Enabling Spectrum Analyzer... ");
-			}else{
-				digitalWrite(SPECTRUM_ANALYZER_INTERRUPT_PIN, LOW);
-				Serial.println("[Spectrum Button] Disabling Spectrum Analyzer... ");
-			}
-			delay(500);
+    switch (currentMode) {
+      case FROM_SD:
+        //not sure yet
+      case RANDOM_SD:
+        currentMode = SIMPLE_NOISE;
+        break;
+      case SIMPLE_NOISE:
+        currentMode = COLOR_NOISE;
+        break;
+      case COLOR_NOISE:
+       currentMode = SPECTRUM_ANALYZER;
+       break;
+      case SPECTRUM_ANALYZER:
+        currentMode = SIMPLE_NOISE;
+        break;
+    }
+    Serial.print("[Mode Switch] Current Mode is: ");
+    Serial.println(currentModeLookupTable[currentMode]); //Lookup and display name of curren mode
 	}
 
 	if(fileMode.pressedFor(1000)){
-		modeRandom = true;
+		currentMode = RANDOM_SD;
+    Serial.print("[Mode Switch] Current Mode is: ");
+    Serial.println(currentModeLookupTable[currentMode]); //Lookup and display name of curren mode
 	}
 
 	if(fileMode.wasPressed()){
-		modeRandom = false;
-		playNextFrame();
+		currentMode = FROM_SD;
+    Serial.print("[Mode Switch] Current Mode is: ");
+    Serial.println(currentModeLookupTable[currentMode]); //Lookup and display name of curren mode 
+		//playNextFrame();
 	}
 
-	if(modeRandom && timer - DELAY_TIME > lastTimer ){
-		lastTimer = millis();
-		playRandomFrame();
-	}
+  switch (currentMode) {
+    case FROM_SD:
+      if(fileMode.wasPressed()){ playNextFrame(); } //doesnt make much sense here might move it back up to the wasPressed func
+      break;
+    case RANDOM_SD:
+      if(timer - DELAY_TIME > lastTimer){
+        lastTimer = millis();
+        playRandomFrame();
+      }
+      break;
+  }
 }
