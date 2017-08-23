@@ -2,9 +2,9 @@
 #include <WiFiUDP.h>
 #include <SPI.h>
 #include <SD.h>
-#include <FastLED.h>
-#include <WiFiManager.h>
-#include <Button.h>
+#include <FastLED.h> //https://github.com/FastLED/FastLED
+#include <WiFiManager.h> //https://github.com/tzapu/WiFiManager
+#include <Button.h> //https://github.com/JChristensen/Button
 
 //UDP Variables
 #define UDP_TX_PACKET_MAX_SIZE 950 //increase UDP size
@@ -435,6 +435,7 @@ void loop() {
 	modeSelect.read();
 
 	if(modeSelect.wasPressed()){
+    //Change mode after button is pressed
     switch (currentMode) {
       case FROM_SD:
         //not sure yet
@@ -464,7 +465,7 @@ void loop() {
 	if(fileMode.wasPressed()){
 		currentMode = FROM_SD;
     Serial.print("[Mode Switch] Current Mode is: ");
-    Serial.println(currentModeLookupTable[currentMode]); //Lookup and display name of curren mode 
+    Serial.println(currentModeLookupTable[currentMode]); //Lookup and display name of curren mode
 		//playNextFrame();
 	}
 
